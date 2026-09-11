@@ -14,6 +14,8 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Ray-Ban Display Composer",
+  referrer: "no-referrer",
+  other: { "mrbd-web-app-capable": "yes" },
   description: "A simple web app for sending text to a Meta Ray-Ban display target.",
 };
 
