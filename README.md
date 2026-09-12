@@ -36,6 +36,10 @@ Official setup: https://upstash.com/docs/redis/howto/vercelintegration
 
 Old links containing `?message=...` no longer display static messages; replace them with the generated display link. Opening `/display` without a channel shows pairing instructions.
 
+## External applications
+
+Use `POST /api/v1/display` with a Bearer key to update the same live display from another application. Configure `DISPLAY_API_KEY` in Vercel and redeploy first. See [the API guide](docs/API.md) for setup, curl/JavaScript examples, response codes, and verification steps.
+
 ## Local development
 
 Use Node.js 22.18+ (or 24 LTS) for the built-in TypeScript test runner.
