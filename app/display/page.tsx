@@ -25,7 +25,7 @@ function LiveDisplay({ channel }: { channel: string | null }) {
         if (!response.ok) throw new Error(data.error || "Connection interrupted.");
         if (!stopped) {
           setMessage(data.message?.message ?? "");
-          setStatus(data.message ? "Connected" : "Waiting for your first message");
+          setStatus(data.message ? "Conncted to FIFA Companion" : "Waiting for your first message");
         }
         retryDelay = 2000;
       } catch (error) {
