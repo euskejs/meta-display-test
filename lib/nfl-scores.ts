@@ -93,15 +93,17 @@ export function teamSummary(scores: Scores, team: string, now = new Date()) {
 
 export function displayUpdate(scores: Scores, team: string, now = new Date()) {
   const summary = teamSummary(scores, team, now);
-  const game = summary.live ?? summary.latest;
+  const game = summary.live ?? summary.latest ?? summary.next;
   if (!game) return null;
   const history = [...summary.finals, ...(summary.live ? [summary.live] : [])];
-  const pages = history.map((result) => {
+  const upcoming = summary.next && (!summary.live || Date.parse(summary.next.date) > Date.parse(summary.live.date)) ? [summary.next] : [];
+  const pages = [...history, ...upcoming].map((result) => {
     const date = new Date(result.date).toLocaleDateString("en-US", { timeZone: "America/Chicago", month: "short", day: "numeric" });
     const own = result.home === team ? result.homeScore! : result.awayScore!;
     const opponent = result.home === team ? result.awayScore! : result.homeScore!;
-    const outcome = result.completed ? own > opponent ? "WIN" : own < opponent ? "LOSS" : "TIE" : "LIVE";
-    return `${findTeam(team)?.name}\n${date} · ${result.phase === 3 ? "Playoffs" : `Week ${result.week}`} · ${outcome}\n${result.away} ${result.awayScore} · ${result.home} ${result.homeScore}\n${result.status}\n${scores.season} regular season: ${summary.record}`.slice(0, 280);
+    const outcome = result.completed ? own > opponent ? "WIN" : own < opponent ? "LOSS" : "TIE" : result.state === "pre" ? "NEXT" : "LIVE";
+    const scoreText = result.state === "pre" ? `${result.away} at ${result.home}` : `${result.away} ${result.awayScore} · ${result.home} ${result.homeScore}`;
+    return `${findTeam(team)?.name}\n${date} · ${result.phase === 3 ? "Playoffs" : `Week ${result.week}`} · ${outcome}\n${scoreText}\n${result.status}\n${scores.season} regular season: ${summary.record}`.slice(0, 280);
   });
   return { game, message: pages[0], pages };
 }

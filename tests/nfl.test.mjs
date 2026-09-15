@@ -115,20 +115,31 @@ test('overlapping workers skip and expired workers cannot publish', async () => 
   assert.equal(db.values.get('meta-display:nfl:sync-lock'), 'new-worker');
 });
 
-test('all completed games are ordered by kickoff, with live coverage last and no future games', () => {
+test('completed games remain ordered by kickoff, live coverage stays newest, and the next match is appended', () => {
   const first = { ...game, id: 'first', date: '2026-09-07T00:20Z', completed: true, state: 'post', status: 'Final' };
   const second = { ...first, id: 'second', date: '2026-09-14T00:20Z', week: 2, homeScore: 3 };
   const live = { ...game, id: 'live', date: '2026-09-21T00:20Z', week: 3 };
-  const future = { ...game, id: 'future', date: '2026-09-28T00:20Z', state: 'pre' };
+  const future = { ...game, id: 'future', date: '2026-09-28T00:20Z', week: 4, state: 'pre', completed: false, homeScore: null, awayScore: null, status: 'Sun 1:00PM' };
   const input = scores([future, second, live, first]);
   const summary = teamSummary(input, 'DAL', now);
   assert.deepEqual(summary.finals.map(g => g.id), ['first', 'second']);
   assert.deepEqual(input.games.map(g => g.id), ['future', 'second', 'live', 'first']);
   const update = displayUpdate(input, 'DAL', now);
-  assert.equal(update.pages.length, 3);
+  assert.equal(update.pages.length, 4);
   assert.match(update.pages[0], /Week 1 · WIN/);
   assert.match(update.pages[1], /Week 2 · LOSS/);
   assert.match(update.pages[2], /Week 3 · LIVE/);
+  assert.match(update.pages[3], /Week 4 · NEXT/);
+  assert.equal(update.message, update.pages[0]);
+});
+
+test('upcoming games are included in the display when there are no newer live results', () => {
+  const completed = { ...game, id: 'complete', date: '2026-09-07T00:20Z', completed: true, state: 'post', status: 'Final' };
+  const future = { ...game, id: 'next', date: '2026-09-28T00:20Z', week: 4, state: 'pre', completed: false, homeScore: null, awayScore: null, status: 'Sun 1:00PM' };
+  const update = displayUpdate(scores([future, completed]), 'DAL', now);
+  assert.equal(update.pages.length, 2);
+  assert.match(update.pages[0], /Week 1 · WIN/);
+  assert.match(update.pages[1], /Week 4 · NEXT/);
   assert.equal(update.message, update.pages[0]);
 });
 
