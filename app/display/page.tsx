@@ -11,6 +11,27 @@ function LiveDisplay({ channel }: { channel: string | null }) {
   const [pages, setPages] = useState<string[]>([]);
   const [sequenceId, setSequenceId] = useState("manual");
   const [status, setStatus] = useState("Connecting…");
+  const [scoreError, setScoreError] = useState("");
+  useEffect(() => {
+    if (!isChannel(channel)) return;
+    const controller = new AbortController();
+    let timer: ReturnType<typeof setTimeout>;
+    async function refreshScores() {
+      try {
+        const response = await fetch(`/api/nfl/refresh?channel=${encodeURIComponent(channel!)}`, {
+          method: "POST", signal: AbortSignal.any([controller.signal, AbortSignal.timeout(55000)]),
+        });
+        if (!response.ok) throw new Error();
+        if (!controller.signal.aborted) setScoreError("");
+      } catch {
+        if (!controller.signal.aborted) setScoreError("Score refresh delayed. Retrying automatically.");
+      } finally {
+        if (!controller.signal.aborted) timer = setTimeout(refreshScores, 60000);
+      }
+    }
+    void refreshScores();
+    return () => { controller.abort(); clearTimeout(timer); };
+  }, [channel]);
   useEffect(() => {
     if (!isChannel(channel)) return;
     let stopped = false;
@@ -30,7 +51,7 @@ function LiveDisplay({ channel }: { channel: string | null }) {
           const incoming: string[] = data.message?.pages ?? [];
           setSequenceId(data.message?.sequenceId ?? "manual");
           setPages((previous) => JSON.stringify(previous) === JSON.stringify(incoming) ? previous : incoming);
-          setStatus(data.message ? "Conncted to FIFA Companion" : "Waiting for your first message");
+          setStatus(data.message ? "Connected to display" : "Waiting for your first message");
         }
         retryDelay = 2000;
       } catch (error) {
@@ -50,6 +71,7 @@ function LiveDisplay({ channel }: { channel: string | null }) {
   return (
     <main className="flex min-h-screen flex-col justify-center bg-black p-8 text-white">
       <p role="status" className="mb-6 text-lg text-cyan-200">{status}</p>
+      {scoreError && <p role="status" className="mb-3 text-sm text-amber-200">{scoreError}</p>}
       <RotatingMessage key={sequenceId} pages={pages} message={message} />
     </main>
   );

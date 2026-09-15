@@ -149,3 +149,28 @@ test('full season fits individual display pages and historical corrections are d
   await reader.write(channel, 'Manual override');
   assert.equal((await reader.read(channel)).pages, undefined);
 });
+
+test('opening a tracked display bootstraps an empty score store and only publishes to that channel', async () => {
+  const db = fakeRedis(), store = createNflStore(env, db.transport), reader = createMessageStore(env, db.transport);
+  await store.savePreference(channel, 'DAL', true);
+  await store.savePreference(other, 'DAL', true);
+  assert.equal(await store.readScores(2026), null);
+  const source = async () => scores([{ ...game, completed: true, state: 'post', status: 'Final' }]);
+  assert.equal((await store.sync(source, now, channel)).sent, 1);
+  assert.equal((await store.readScores(2026)).games.length, 1);
+  assert.match((await reader.read(channel)).message, /Dallas Cowboys/);
+  assert.equal(await reader.read(other), null);
+  // Another display reuses the shared snapshot, without requiring a scheduler.
+  assert.equal((await store.sync(async () => assert.fail('Must reuse cached scores'), now, other)).sent, 1);
+  assert.match((await reader.read(other)).message, /Dallas Cowboys/);
+});
+
+test('display refresh never fetches for unknown or paused subscriptions', async () => {
+  const db = fakeRedis(), store = createNflStore(env, db.transport);
+  const source = async () => assert.fail('Must not fetch scores');
+  assert.equal((await store.sync(source, now, channel)).skipped, true);
+  await store.savePreference(channel, 'DAL', false);
+  assert.equal((await store.sync(source, now, channel)).skipped, true);
+  await assert.rejects(store.sync(source, now, 'invalid'), { status: 400 });
+  assert.equal(await store.readScores(2026), null);
+});

@@ -14,7 +14,7 @@ function when(date: string) {
 function scoreLine(game: Game) {
   return game.state === "pre" ? `${game.away} at ${game.home}` : `${game.away} ${game.awayScore ?? "—"} · ${game.home} ${game.homeScore ?? "—"}`;
 }
-export default function NflResults({ team }: { team: string }) {
+export default function NflResults({ team, channel, enabled }: { team: string; channel: string; enabled: boolean }) {
   const [data, setData] = useState<Results | null>(null);
   const [error, setError] = useState("");
   const [retry, setRetry] = useState(0);
@@ -22,20 +22,30 @@ export default function NflResults({ team }: { team: string }) {
     const controller = new AbortController();
     let timer: ReturnType<typeof setTimeout>;
     async function refresh() {
+      let refreshError = "";
+      if (enabled) {
+        try {
+          const response = await fetch(`/api/nfl/refresh?channel=${encodeURIComponent(channel)}`, {
+            method: "POST", signal: AbortSignal.any([controller.signal, AbortSignal.timeout(55000)]),
+          });
+          if (!response.ok) throw new Error();
+        } catch { refreshError = "Scores could not be refreshed. Retrying automatically; your last results are retained."; }
+      }
+      if (controller.signal.aborted) return;
       try {
         const response = await fetch(`/api/nfl/results?team=${encodeURIComponent(team)}`, {
           cache: "no-store", signal: AbortSignal.any([controller.signal, AbortSignal.timeout(12000)]),
         });
         const result = await response.json();
         if (!response.ok) throw new Error(result.error);
-        if (!controller.signal.aborted) { setData(result); setError(""); }
+        if (!controller.signal.aborted) { setData(result); setError(refreshError); }
       } catch {
         if (!controller.signal.aborted) setError("Unable to refresh scores. Showing the last available results; retrying automatically.");
       } finally { if (!controller.signal.aborted) timer = setTimeout(refresh, 30000); }
     }
     void refresh();
     return () => { controller.abort(); clearTimeout(timer); };
-  }, [team, retry]);
+  }, [team, channel, enabled, retry]);
   const completed = data?.games?.filter((game) => game.completed) ?? [];
   const active = data?.live;
   return (
@@ -43,7 +53,7 @@ export default function NflResults({ team }: { team: string }) {
       <h3 className="font-semibold">{findTeam(team)?.name} {data?.season ?? ""}</h3>
       {error && <p role="status" className="mt-2 text-sm text-amber-200">{error} <button type="button" className="underline" onClick={() => setRetry((value) => value + 1)}>Retry now</button></p>}
       {!data && !error && <p role="status" className="mt-2 text-sm text-slate-300">Loading scores…</p>}
-      {data?.pending && <p role="status" className="mt-2 text-sm text-amber-200">Waiting for the score service’s first refresh. Your team is saved; automatic display updates will begin when scores are available.</p>}
+      {data?.pending && <p role="status" className="mt-2 text-sm text-amber-200">{enabled ? "Fetching your team’s season results. This page will update automatically." : "Resume updates to fetch your team’s season results."}</p>}
       {data && !data.pending && <>
         <p className="mt-1 text-sm text-slate-300">Regular season W–L–T: {data.record}</p>
         {data.stale && <p role="status" className="mt-2 text-sm text-amber-200">Score updates are delayed. These are the last available results.</p>}

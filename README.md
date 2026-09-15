@@ -44,7 +44,7 @@ Use `POST /api/v1/display` with a Bearer key to update the same live display fro
 
 Choose **Conference → Division → Team** in the composer, then **Track this team** to save a per-display subscription. The panel shows every completed match oldest-first, live scores, the season record, and the next game. The glasses cycle through the results every 10 seconds, one game per page, with any live game appended. **Pause automatic updates** lets you keep manual text on the display.
 
-Automatic updates require `CRON_SECRET` and a scheduler calling `/api/nfl/sync` every minute. An always-on Node worker is included (`npm run nfl:worker`); Vercel Pro/Enterprise Cron and other schedulers are also supported. See [NFL setup and behavior](docs/NFL.md) before enabling production tracking. The glasses app must remain open; the composer can be closed.
+The open composer or glasses display automatically fetches scores for its enabled subscription; no separate scheduler is required. For background refreshes while both pages are closed, configure `CRON_SECRET` and a scheduler calling `/api/nfl/sync` every minute. An always-on Node worker is included (`npm run nfl:worker`); Vercel Pro/Enterprise Cron and other schedulers are also supported. See [NFL setup and behavior](docs/NFL.md) before enabling production tracking. The glasses app must remain open; the composer can be closed.
 
 ## Local development
 

@@ -49,7 +49,14 @@ export function createNflStore(env: Record<string, string | undefined>, transpor
       return raw === null ? null : JSON.parse(raw);
     },
     async health(): Promise<string | null> { return command(["GET", HEALTH]); },
-    async sync(source = fetchScores, now = new Date()) {
+    async sync(source = fetchScores, now = new Date(), onlyChannel?: string) {
+      const target = onlyChannel === undefined ? undefined : channelId(onlyChannel);
+      // A display may refresh only its own saved, enabled subscription.
+      // Unknown channels and paused/manual displays never fetch scores.
+      if (target) {
+        const raw = await command(["HGET", PREFERENCES, target]);
+        if (raw === null || !preference(raw).enabled) return { skipped: true, sent: 0 };
+      }
       const token = randomUUID();
       if (await command(["SET", LOCK, token, "NX", "EX", 50]) !== "OK") return { skipped: true, sent: 0 };
       try {
@@ -71,7 +78,8 @@ export function createNflStore(env: Record<string, string | undefined>, transpor
             throw new Error("NFL sync lock expired.");
           }
         }
-        const entries: string[] = await command(["HGETALL", PREFERENCES]);
+        const raw = target ? await command(["HGET", PREFERENCES, target]) : null;
+        const entries: string[] = target ? (raw === null ? [] : [target, raw]) : await command(["HGETALL", PREFERENCES]);
         let sent = 0;
         for (let i = 0; i < entries.length; i += 2) {
           const channel = entries[i], raw = entries[i + 1];

@@ -106,8 +106,8 @@ export default function NflPicker({ channel }: { channel: string }) {
         </div>
       </form>
       <p role="status" className="mt-3 text-sm text-slate-300">{status}</p>
-      <p className="mt-3 text-xs leading-relaxed text-slate-400">Scores refresh about once a minute while the score service is running. Automatic updates replace manual text. Pause them before composing a message you want to keep. Keep the display app open on your glasses.</p>
-      {savedTeam && <NflResults key={savedTeam} team={savedTeam} />}
+      <p className="mt-3 text-xs leading-relaxed text-slate-400">Scores refresh about once a minute while this page or your glasses display is open. Automatic updates replace manual text. Pause them before composing a message you want to keep. Keep the display app open on your glasses.</p>
+      {savedTeam && <NflResults key={`${savedTeam}:${enabled}`} team={savedTeam} channel={channel} enabled={enabled} />}
     </section>
   );
 }
