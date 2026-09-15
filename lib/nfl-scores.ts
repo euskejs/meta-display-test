@@ -91,19 +91,42 @@ export function teamSummary(scores: Scores, team: string, now = new Date()) {
   return { games, finals, live, latest, next, record: `${wins}–${losses}–${ties}` };
 }
 
+export function teamLogoUrl(team: string) {
+  return `https://a.espncdn.com/i/teamlogos/nfl/500/${team.toLowerCase()}.png`;
+}
+
 export function displayUpdate(scores: Scores, team: string, now = new Date()) {
   const summary = teamSummary(scores, team, now);
   const game = summary.live ?? summary.latest ?? summary.next;
   if (!game) return null;
-  const history = [...summary.finals, ...(summary.live ? [summary.live] : [])];
-  const upcoming = summary.next && (!summary.live || Date.parse(summary.next.date) > Date.parse(summary.live.date)) ? [summary.next] : [];
-  const pages = [...history, ...upcoming].map((result) => {
-    const date = new Date(result.date).toLocaleDateString("en-US", { timeZone: "America/Chicago", month: "short", day: "numeric" });
-    const own = result.home === team ? result.homeScore! : result.awayScore!;
-    const opponent = result.home === team ? result.awayScore! : result.homeScore!;
-    const outcome = result.completed ? own > opponent ? "WIN" : own < opponent ? "LOSS" : "TIE" : result.state === "pre" ? "NEXT" : "LIVE";
-    const scoreText = result.state === "pre" ? `${result.away} at ${result.home}` : `${result.away} ${result.awayScore} · ${result.home} ${result.homeScore}`;
-    return `${findTeam(team)?.name}\n${date} · ${result.phase === 3 ? "Playoffs" : `Week ${result.week}`} · ${outcome}\n${scoreText}\n${result.status}\n${scores.season} regular season: ${summary.record}`.slice(0, 280);
-  });
-  return { game, message: pages[0], pages };
+
+  const lines: string[] = [
+    findTeam(team)?.name ?? team,
+    `${scores.season} regular season: ${summary.record}`,
+  ];
+
+  if (summary.live) {
+    const live = summary.live;
+    lines.push(`LIVE ${live.away} ${live.awayScore} · ${live.home} ${live.homeScore}`);
+    lines.push(live.status);
+  }
+
+  if (summary.finals.length) {
+    const compact = summary.finals.map((result) => {
+      const own = result.home === team ? result.homeScore! : result.awayScore!;
+      const opponent = result.home === team ? result.awayScore! : result.homeScore!;
+      const outcome = own > opponent ? "W" : own < opponent ? "L" : "T";
+      return `${outcome} ${result.away} ${own}-${opponent}`;
+    });
+    lines.push(`Results: ${compact.join(" | ")}`);
+  }
+
+  if (summary.next) {
+    const next = summary.next;
+    lines.push(`Next: ${next.away} at ${next.home}`);
+    lines.push(next.status);
+  }
+
+  const message = lines.join("\n").slice(0, 280);
+  return { game, teamId: team, logoUrl: teamLogoUrl(team), message, pages: [message] };
 }

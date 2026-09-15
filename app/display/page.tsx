@@ -9,6 +9,7 @@ function DisplayContent() {
 function LiveDisplay({ channel }: { channel: string | null }) {
   const [message, setMessage] = useState("");
   const [pages, setPages] = useState<string[]>([]);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [sequenceId, setSequenceId] = useState("manual");
   const [status, setStatus] = useState("Connecting…");
   const [scoreError, setScoreError] = useState("");
@@ -49,6 +50,7 @@ function LiveDisplay({ channel }: { channel: string | null }) {
         if (!stopped) {
           setMessage(data.message?.message ?? "");
           const incoming: string[] = data.message?.pages ?? [];
+          setImageUrl(data.message?.imageUrl ?? null);
           setSequenceId(data.message?.sequenceId ?? "manual");
           setPages((previous) => JSON.stringify(previous) === JSON.stringify(incoming) ? previous : incoming);
           setStatus(data.message ? "Connected to display" : "Waiting for your first message");
@@ -72,6 +74,11 @@ function LiveDisplay({ channel }: { channel: string | null }) {
     <main className="flex min-h-screen flex-col justify-center bg-black p-8 text-white">
       <p role="status" className="mb-6 text-lg text-cyan-200">{status}</p>
       {scoreError && <p role="status" className="mb-3 text-sm text-amber-200">{scoreError}</p>}
+      {imageUrl && (
+        <div className="mb-5 flex items-center justify-center">
+          <img src={imageUrl} alt="Team logo" className="h-20 w-20 rounded-full border border-white/10 bg-white/5 object-contain p-2 shadow-lg shadow-cyan-500/20" />
+        </div>
+      )}
       <RotatingMessage key={sequenceId} pages={pages} message={message} />
     </main>
   );

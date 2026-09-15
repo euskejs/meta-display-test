@@ -90,7 +90,8 @@ export function createNflStore(env: Record<string, string | undefined>, transpor
           if (!update) continue;
           const fingerprint = JSON.stringify([setting.revision, update.pages]);
           const saved = JSON.stringify({ message: update.message, pages: update.pages,
-            sequenceId: `${scores.season}:${setting.team}:${setting.revision}`, updatedAt: now.toISOString() });
+            sequenceId: `${scores.season}:${setting.team}:${setting.revision}`, imageUrl: update.logoUrl,
+            updatedAt: now.toISOString() });
           const published = await command(["EVAL", PUBLISH_SCRIPT, 4, PREFERENCES,
             `meta-display:message:${channel}`, `meta-display:nfl:last:${channel}`, LOCK,
             channel, raw, fingerprint, saved, token]);

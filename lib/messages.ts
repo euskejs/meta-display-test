@@ -7,7 +7,7 @@ export class MessageError extends Error {
   status: number;
   constructor(message: string, status: number) { super(message); this.status = status; }
 }
-export type DisplayMessage = { message: string; updatedAt: string; pages?: string[]; sequenceId?: string };
+export type DisplayMessage = { message: string; updatedAt: string; pages?: string[]; sequenceId?: string; imageUrl?: string };
 export function isSameOrigin(request: Request) {
   const origin = request.headers.get("origin");
   if (!origin) return true;
@@ -32,6 +32,7 @@ export function createMessageStore(env: Record<string, string | undefined>, requ
         const value = JSON.parse(result);
         if (typeof value.message !== "string" || typeof value.updatedAt !== "string") throw new Error();
         if (value.sequenceId !== undefined && typeof value.sequenceId !== "string") throw new Error();
+        if (value.imageUrl !== undefined && (typeof value.imageUrl !== "string" || !/^https?:\/\//i.test(value.imageUrl))) throw new Error();
         if (value.pages !== undefined && (!Array.isArray(value.pages) || !value.pages.length ||
           !value.pages.every((page: unknown) => typeof page === "string" && page.length > 0 && page.length <= MAX_MESSAGE_LENGTH))) throw new Error();
         return value;

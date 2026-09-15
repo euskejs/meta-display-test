@@ -72,7 +72,7 @@ test('live scores reach existing display reader; duplicates skipped, finals/corr
   const finalTime = new Date(later.getTime() + 60000);
   const final = { ...game, state: 'post', completed: true, status: 'Final/OT' };
   assert.equal((await store.sync(async () => scores([final], finalTime), finalTime)).sent, 1);
-  assert.match((await messages.read(channel)).message, /Final\/OT\n2026 regular season: 1–0–0/);
+  assert.match((await messages.read(channel)).message, /Dallas Cowboys\n2026 regular season: 1–0–0/);
   const correctionTime = new Date(finalTime.getTime() + 60000);
   assert.equal((await store.sync(async () => scores([{ ...final, awayScore: 17 }], correctionTime), correctionTime)).sent, 1);
   assert.match((await messages.read(channel)).message, /0–1–0/);
@@ -125,11 +125,10 @@ test('completed games remain ordered by kickoff, live coverage stays newest, and
   assert.deepEqual(summary.finals.map(g => g.id), ['first', 'second']);
   assert.deepEqual(input.games.map(g => g.id), ['future', 'second', 'live', 'first']);
   const update = displayUpdate(input, 'DAL', now);
-  assert.equal(update.pages.length, 4);
-  assert.match(update.pages[0], /Week 1 · WIN/);
-  assert.match(update.pages[1], /Week 2 · LOSS/);
-  assert.match(update.pages[2], /Week 3 · LIVE/);
-  assert.match(update.pages[3], /Week 4 · NEXT/);
+  assert.equal(update.pages.length, 1);
+  assert.match(update.pages[0], /Dallas Cowboys/);
+  assert.match(update.pages[0], /LIVE/);
+  assert.match(update.pages[0], /Next: PHI at DAL/);
   assert.equal(update.message, update.pages[0]);
 });
 
@@ -137,28 +136,34 @@ test('upcoming games are included in the display when there are no newer live re
   const completed = { ...game, id: 'complete', date: '2026-09-07T00:20Z', completed: true, state: 'post', status: 'Final' };
   const future = { ...game, id: 'next', date: '2026-09-28T00:20Z', week: 4, state: 'pre', completed: false, homeScore: null, awayScore: null, status: 'Sun 1:00PM' };
   const update = displayUpdate(scores([future, completed]), 'DAL', now);
-  assert.equal(update.pages.length, 2);
-  assert.match(update.pages[0], /Week 1 · WIN/);
-  assert.match(update.pages[1], /Week 4 · NEXT/);
+  assert.equal(update.pages.length, 1);
+  assert.match(update.pages[0], /Results:/);
+  assert.match(update.pages[0], /Next: PHI at DAL/);
   assert.equal(update.message, update.pages[0]);
 });
 
-test('full season fits individual display pages and historical corrections are delivered', async () => {
+test('single-page summaries keep the full team state and react to historical corrections', async () => {
   const history = Array.from({ length: 17 }, (_, index) => ({ ...game, id: `week-${index}`, week: index + 1,
     date: new Date(Date.UTC(2026, 8, 7 + index * 7)).toISOString(), state: 'post', completed: true, status: 'Final' }));
   const db = fakeRedis(), store = createNflStore(env, db.transport), reader = createMessageStore(env, db.transport);
   await store.savePreference(channel, 'DAL', true);
   await store.sync(async () => scores(history), now);
   const saved = await reader.read(channel);
-  assert.equal(saved.pages.length, 17);
-  assert.ok(saved.pages.every(page => page.length <= 280));
+  assert.equal(saved.pages.length, 1);
+  assert.ok(saved.pages[0].length <= 280);
+  assert.match(saved.pages[0], /Results:/);
   const later = new Date(now.getTime() + 60000);
-  // A correction with the same winner leaves the record and latest game unchanged.
   history[0].homeScore = 21;
   assert.equal((await store.sync(async () => scores(history, later), later)).sent, 1);
-  assert.match((await reader.read(channel)).pages[0], /DAL 21/);
+  assert.match((await reader.read(channel)).pages[0], /21/);
   await reader.write(channel, 'Manual override');
   assert.equal((await reader.read(channel)).pages, undefined);
+});
+
+test('single-page summaries include a team logo URL for the glasses display', () => {
+  const update = displayUpdate(scores([game]), 'DAL', now);
+  assert.equal(update.teamId, 'DAL');
+  assert.match(update.logoUrl, /\/dal\.png$/i);
 });
 
 test('opening a tracked display bootstraps an empty score store and only publishes to that channel', async () => {
