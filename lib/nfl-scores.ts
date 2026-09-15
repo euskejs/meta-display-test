@@ -76,7 +76,8 @@ export async function fetchScores(season = currentSeason(), request = fetch): Pr
 }
 
 export function teamSummary(scores: Scores, team: string, now = new Date()) {
-  const games = scores.games.filter((game) => game.home === team || game.away === team);
+  const games = scores.games.filter((game) => game.home === team || game.away === team)
+    .sort((a, b) => Date.parse(a.date) - Date.parse(b.date) || a.id.localeCompare(b.id));
   const finals = games.filter((game) => game.completed);
   let wins = 0, losses = 0, ties = 0;
   for (const game of finals.filter((game) => game.phase === 2)) {
@@ -87,14 +88,20 @@ export function teamSummary(scores: Scores, team: string, now = new Date()) {
   const live = games.find((game) => game.state === "in" && !game.completed);
   const latest = finals.at(-1);
   const next = games.find((game) => game.state === "pre" && Date.parse(game.date) >= now.getTime());
-  return { games, live, latest, next, record: `${wins}–${losses}–${ties}` };
+  return { games, finals, live, latest, next, record: `${wins}–${losses}–${ties}` };
 }
 
 export function displayUpdate(scores: Scores, team: string, now = new Date()) {
   const summary = teamSummary(scores, team, now);
   const game = summary.live ?? summary.latest;
   if (!game) return null;
-  // Scores and game status/clock changes both cause live updates.
-  const message = `${findTeam(team)?.name}\n${game.away} ${game.awayScore} · ${game.home} ${game.homeScore}\n${game.status}\n${scores.season} regular season: ${summary.record}`;
-  return { game, message: message.slice(0, 280) };
+  const history = [...summary.finals, ...(summary.live ? [summary.live] : [])];
+  const pages = history.map((result) => {
+    const date = new Date(result.date).toLocaleDateString("en-US", { timeZone: "America/Chicago", month: "short", day: "numeric" });
+    const own = result.home === team ? result.homeScore! : result.awayScore!;
+    const opponent = result.home === team ? result.awayScore! : result.homeScore!;
+    const outcome = result.completed ? own > opponent ? "WIN" : own < opponent ? "LOSS" : "TIE" : "LIVE";
+    return `${findTeam(team)?.name}\n${date} · ${result.phase === 3 ? "Playoffs" : `Week ${result.week}`} · ${outcome}\n${result.away} ${result.awayScore} · ${result.home} ${result.homeScore}\n${result.status}\n${scores.season} regular season: ${summary.record}`.slice(0, 280);
+  });
+  return { game, message: pages[0], pages };
 }

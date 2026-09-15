@@ -114,3 +114,38 @@ test('overlapping workers skip and expired workers cannot publish', async () => 
   assert.equal(db.values.has(`meta-display:message:${channel}`), false);
   assert.equal(db.values.get('meta-display:nfl:sync-lock'), 'new-worker');
 });
+
+test('all completed games are ordered by kickoff, with live coverage last and no future games', () => {
+  const first = { ...game, id: 'first', date: '2026-09-07T00:20Z', completed: true, state: 'post', status: 'Final' };
+  const second = { ...first, id: 'second', date: '2026-09-14T00:20Z', week: 2, homeScore: 3 };
+  const live = { ...game, id: 'live', date: '2026-09-21T00:20Z', week: 3 };
+  const future = { ...game, id: 'future', date: '2026-09-28T00:20Z', state: 'pre' };
+  const input = scores([future, second, live, first]);
+  const summary = teamSummary(input, 'DAL', now);
+  assert.deepEqual(summary.finals.map(g => g.id), ['first', 'second']);
+  assert.deepEqual(input.games.map(g => g.id), ['future', 'second', 'live', 'first']);
+  const update = displayUpdate(input, 'DAL', now);
+  assert.equal(update.pages.length, 3);
+  assert.match(update.pages[0], /Week 1 · WIN/);
+  assert.match(update.pages[1], /Week 2 · LOSS/);
+  assert.match(update.pages[2], /Week 3 · LIVE/);
+  assert.equal(update.message, update.pages[0]);
+});
+
+test('full season fits individual display pages and historical corrections are delivered', async () => {
+  const history = Array.from({ length: 17 }, (_, index) => ({ ...game, id: `week-${index}`, week: index + 1,
+    date: new Date(Date.UTC(2026, 8, 7 + index * 7)).toISOString(), state: 'post', completed: true, status: 'Final' }));
+  const db = fakeRedis(), store = createNflStore(env, db.transport), reader = createMessageStore(env, db.transport);
+  await store.savePreference(channel, 'DAL', true);
+  await store.sync(async () => scores(history), now);
+  const saved = await reader.read(channel);
+  assert.equal(saved.pages.length, 17);
+  assert.ok(saved.pages.every(page => page.length <= 280));
+  const later = new Date(now.getTime() + 60000);
+  // A correction with the same winner leaves the record and latest game unchanged.
+  history[0].homeScore = 21;
+  assert.equal((await store.sync(async () => scores(history, later), later)).sent, 1);
+  assert.match((await reader.read(channel)).pages[0], /DAL 21/);
+  await reader.write(channel, 'Manual override');
+  assert.equal((await reader.read(channel)).pages, undefined);
+});

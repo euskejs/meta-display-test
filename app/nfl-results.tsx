@@ -36,7 +36,8 @@ export default function NflResults({ team }: { team: string }) {
     void refresh();
     return () => { controller.abort(); clearTimeout(timer); };
   }, [team, retry]);
-  const active = data?.live ?? data?.latest;
+  const completed = data?.games?.filter((game) => game.completed) ?? [];
+  const active = data?.live;
   return (
     <section aria-label={`${findTeam(team)?.name} results`} className="mt-5 rounded-2xl border border-cyan-400/20 bg-slate-950/60 p-4">
       <h3 className="font-semibold">{findTeam(team)?.name} {data?.season ?? ""}</h3>
@@ -47,10 +48,21 @@ export default function NflResults({ team }: { team: string }) {
         <p className="mt-1 text-sm text-slate-300">Regular season W–L–T: {data.record}</p>
         {data.stale && <p role="status" className="mt-2 text-sm text-amber-200">Score updates are delayed. These are the last available results.</p>}
         {active ? <div className="mt-4">
-          <p className="text-xs uppercase tracking-widest text-cyan-300">{data.live ? "In progress" : "Latest result"}</p>
+          <p className="text-xs uppercase tracking-widest text-cyan-300">In progress</p>
           <p className="mt-1 text-xl font-semibold">{scoreLine(active)}</p>
           <p className="text-sm text-slate-300">{active.status} · {when(active.date)}</p>
-        </div> : <p className="mt-3 text-sm text-slate-300">No results yet this season.</p>}
+        </div> : null}
+        <h4 className="mt-4 font-semibold">Match results · Oldest first</h4>
+        {completed.length ? <ol className="mt-2 divide-y divide-white/10">
+          {completed.map((game) => {
+            const own = game.home === team ? game.homeScore! : game.awayScore!;
+            const opponent = game.home === team ? game.awayScore! : game.homeScore!;
+            return <li key={game.id} className="py-3 text-sm">
+              <p className="font-medium">{game.phase === 3 ? "Playoffs" : `Week ${game.week}`} · {own > opponent ? "Win" : own < opponent ? "Loss" : "Tie"} · {scoreLine(game)}</p>
+              <p className="mt-1 text-xs text-slate-400">{when(game.date)} · {game.status}</p>
+            </li>;
+          })}
+        </ol> : <p className="mt-2 text-sm text-slate-300">No completed matches yet this season.</p>}
         <p className="mt-4 text-sm text-slate-300">{data.next ? `Next: ${scoreLine(data.next)} · ${when(data.next.date)}` : "No upcoming game is currently scheduled."}</p>
         {!!data.games?.length && <details className="mt-4 text-sm">
           <summary className="cursor-pointer text-cyan-200">Season schedule and results</summary>
