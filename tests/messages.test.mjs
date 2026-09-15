@@ -1,9 +1,16 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createMessageStore, MessageError } from '../lib/messages.ts';
+import { createMessageStore, isSameOrigin, MessageError } from '../lib/messages.ts';
 const channel = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 const other = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
 const env = { UPSTASH_REDIS_REST_URL: 'https://redis.example', UPSTASH_REDIS_REST_TOKEN: 'test-token' };
+test('same-origin checks use the browser-facing host and reject cross-origin submissions', () => {
+  const request = (origin) => new Request('http://localhost:3001/api/message', { headers: { host: '127.0.0.1:3001', origin } });
+  assert.equal(isSameOrigin(request('http://127.0.0.1:3001')), true);
+  for (const origin of ['http://evil.example', 'http://127.0.0.1:3002', 'null', 'https://127.0.0.1:3001']) {
+    assert.equal(isSameOrigin(request(origin)), false);
+  }
+});
 test('separate store instances share latest messages and isolate channels', async () => {
   const database = new Map();
   const transport = async (_, options) => {

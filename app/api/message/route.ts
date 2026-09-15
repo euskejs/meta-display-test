@@ -1,4 +1,4 @@
-import { createMessageStore, MessageError } from "@/lib/messages";
+import { createMessageStore, isSameOrigin, MessageError } from "@/lib/messages";
 export const runtime = "nodejs";
 const headers = { "Cache-Control": "no-store", "Referrer-Policy": "no-referrer" };
 function failure(error: unknown) {
@@ -14,8 +14,7 @@ export async function GET(request: Request) {
   } catch (error) { return failure(error); }
 }
 export async function POST(request: Request) {
-  const origin = request.headers.get("origin");
-  if (origin && origin !== new URL(request.url).origin) {
+  if (!isSameOrigin(request)) {
     return Response.json({ error: "Send messages from the composer website." }, { status: 403, headers });
   }
   try {

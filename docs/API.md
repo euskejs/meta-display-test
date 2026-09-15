@@ -92,6 +92,8 @@ HTTP 200 confirms that Redis saved the message. It does not confirm that the gla
 
 Each successful call replaces the prior text and resets its seven-day expiry. Concurrent writers (including the composer) use last-write-wins ordering at Redis. There is no message queue or delivery acknowledgement. If a request times out, it might already have saved; retrying the same text is safe, but may overwrite newer text from another writer.
 
+If NFL automatic updates are enabled for the channel, a later score/status update may replace vendor-supplied text. Pause automatic updates in the composer to keep manually or externally supplied messages. See [NFL tracking](NFL.md) for setup and behavior.
+
 Errors have the form `{"error":"Explanation"}`:
 
 | Status | Meaning |

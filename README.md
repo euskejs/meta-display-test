@@ -40,6 +40,12 @@ Old links containing `?message=...` no longer display static messages; replace t
 
 Use `POST /api/v1/display` with a Bearer key to update the same live display from another application. Configure `DISPLAY_API_KEY` in Vercel and redeploy first. See [the API guide](docs/API.md) for setup, curl/JavaScript examples, response codes, and verification steps.
 
+## NFL live scores
+
+Choose **Conference → Division → Team** in the composer, then **Track this team** to save a per-display subscription. The panel shows live scores, final results, the season record, and the next game. **Pause automatic updates** lets you keep manual text on the display.
+
+Automatic updates require `CRON_SECRET` and a scheduler calling `/api/nfl/sync` every minute. An always-on Node worker is included (`npm run nfl:worker`); Vercel Pro/Enterprise Cron and other schedulers are also supported. See [NFL setup and behavior](docs/NFL.md) before enabling production tracking. The glasses app must remain open; the composer can be closed.
+
 ## Local development
 
 Use Node.js 22.18+ (or 24 LTS) for the built-in TypeScript test runner.

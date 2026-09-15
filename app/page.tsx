@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { isChannel, MAX_MESSAGE_LENGTH } from "@/lib/messages";
+import NflPicker from "./nfl-picker";
 
 export default function Home() {
   const [message, setMessage] = useState("");
@@ -100,6 +101,7 @@ export default function Home() {
           </form>
 
           <p role="status" className="mt-5 text-sm text-slate-300">Status: {status}</p>
+          {channel && <NflPicker key={channel} channel={channel} />}
         </section>
 
         <section className="w-full max-w-lg rounded-[36px] border border-cyan-400/30 bg-gradient-to-br from-slate-900 via-slate-950 to-cyan-950 p-5 shadow-[0_0_40px_rgba(34,211,238,0.2)]">
