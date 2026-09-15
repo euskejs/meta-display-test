@@ -142,6 +142,14 @@ test('upcoming games are included in the display when there are no newer live re
   assert.equal(update.message, update.pages[0]);
 });
 
+test('compact results show the date and correct outcome wording for losses', () => {
+  const lost = { ...game, id: 'nyg-loss', date: '2026-09-14T00:20:00Z', home: 'DAL', away: 'NYG', homeScore: 7, awayScore: 14, state: 'post', completed: true, status: 'Final' };
+  const update = displayUpdate(scores([lost]), 'DAL', now);
+  assert.match(update.pages[0], /Sep 14 L vs NYG 7-14/);
+  assert.doesNotMatch(update.pages[0], /Lost DAL/);
+  assert.doesNotMatch(update.pages[0], /L DAL/);
+});
+
 test('single-page summaries keep the full team state and react to historical corrections', async () => {
   const history = Array.from({ length: 17 }, (_, index) => ({ ...game, id: `week-${index}`, week: index + 1,
     date: new Date(Date.UTC(2026, 8, 7 + index * 7)).toISOString(), state: 'post', completed: true, status: 'Final' }));

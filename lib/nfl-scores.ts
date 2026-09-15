@@ -115,8 +115,12 @@ export function displayUpdate(scores: Scores, team: string, now = new Date()) {
     const compact = summary.finals.map((result) => {
       const own = result.home === team ? result.homeScore! : result.awayScore!;
       const opponent = result.home === team ? result.awayScore! : result.homeScore!;
+      const opponentTeam = result.home === team ? result.away : result.home;
+      const venue = result.home === team ? "vs" : "@";
       const outcome = own > opponent ? "W" : own < opponent ? "L" : "T";
-      return `${outcome} ${result.away} ${own}-${opponent}`;
+      const date = new Date(result.date);
+      const label = new Intl.DateTimeFormat("en-US", { month: "short", day: "2-digit", timeZone: "UTC" }).format(date);
+      return `${label} ${outcome} ${venue} ${opponentTeam} ${own}-${opponent}`;
     });
     lines.push(`Results: ${compact.join(" | ")}`);
   }
