@@ -34,15 +34,21 @@ Official setup: https://upstash.com/docs/redis/howto/vercelintegration
 5. Type a message on the composer and click **Send to display**. The glasses page normally picks it up after the next two-second poll plus network latency.
 6. Send a second message without changing the glasses URL. It replaces the first automatically.
 
-Old links containing `?message=...` no longer display static messages; replace them with the generated display link. Opening `/display` without a channel shows pairing instructions.
+Old links containing `?message=...` no longer display static messages; replace them with the generated display link. Opening `/display` without a channel creates or restores that browser’s private pairing.
 
 ## External applications
 
 Use `POST /api/v1/display` with a Bearer key to update the same live display from another application. Configure `DISPLAY_API_KEY` in Vercel and redeploy first. See [the API guide](docs/API.md) for setup, curl/JavaScript examples, response codes, and verification steps.
 
+## Shared glasses URL
+
+For independent NFL tracking, every user can add **https://meta-display-test.vercel.app/display** in Meta AI. Each glasses browser remembers its own private channel and team. First-time users see the team picker. Existing channel-specific links still work and are hidden from the address bar after pairing is saved. Clearing browser storage resets the pairing.
+
+Use the composer's private display link when you want phone messages or API calls to control the same glasses. Opening the common URL on separate devices does not connect them to each other.
+
 ## NFL live scores
 
-Choose **Conference → Division → Team** in the composer, then **Track this team** to save a per-display subscription. The panel shows every completed match oldest-first, live scores, the season record, and the next game. The glasses cycle through the results every 10 seconds, one game per page, with any live game appended. **Pause automatic updates** lets you keep manual text on the display.
+Choose **Conference → Division → Team** in the composer or through **Choose NFL team** on the glasses display, then **Track this team** to save a per-display subscription. The panel shows every completed match oldest-first, live scores, the season record, and the next game. The glasses cycle through the results every 10 seconds, one game per page, with any live game appended. **Pause automatic updates** lets you keep manual text on the display.
 
 The open composer or glasses display automatically fetches scores for its enabled subscription; no separate scheduler is required. For background refreshes while both pages are closed, configure `CRON_SECRET` and a scheduler calling `/api/nfl/sync` every minute. An always-on Node worker is included (`npm run nfl:worker`); Vercel Pro/Enterprise Cron and other schedulers are also supported. See [NFL setup and behavior](docs/NFL.md) before enabling production tracking. The glasses app must remain open; the composer can be closed.
 

@@ -1,18 +1,43 @@
 "use client";
 import { Suspense, useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { resolveDisplayPairing } from "@/lib/display-pairing";
 import { isChannel } from "@/lib/messages";
+import NflPicker from "../nfl-picker";
 function DisplayContent() {
-  const channel = useSearchParams().get("channel");
-  return <LiveDisplay key={channel} channel={channel} />;
+  const [pairing, setPairing] = useState<ReturnType<typeof resolveDisplayPairing> | null>(null);
+  const [error, setError] = useState("");
+  useEffect(() => {
+    let cancelled = false;
+    Promise.resolve().then(() => {
+      if (cancelled) return;
+      try {
+        const resolved = resolveDisplayPairing(window.location.search, {
+          getItem: (key) => window.localStorage.getItem(key),
+          setItem: (key, value) => window.localStorage.setItem(key, value),
+        }, () => crypto.randomUUID());
+        const url = new URL(window.location.href);
+        url.searchParams.delete("channel");
+        window.history.replaceState(null, "", url.pathname + url.search + url.hash);
+        setPairing(resolved);
+      } catch (cause) { setError(cause instanceof Error ? cause.message : "Unable to set up this display."); }
+    });
+    return () => { cancelled = true; };
+  }, []);
+  if (!pairing) return <main className="min-h-screen bg-black p-8 text-2xl text-white" role="status">{error || "Connecting…"}</main>;
+  return <>
+    {!pairing.persistent && <p role="status" className="bg-black px-6 pt-4 text-amber-200">This browser cannot remember your display. Reopening the common URL may reset your team selection.</p>}
+    <LiveDisplay key={pairing.channel} channel={pairing.channel} initiallyChoosingTeam={pairing.firstVisit} />
+  </>;
 }
-function LiveDisplay({ channel }: { channel: string | null }) {
+function LiveDisplay({ channel, initiallyChoosingTeam = false }: { channel: string | null; initiallyChoosingTeam?: boolean }) {
   const [message, setMessage] = useState("");
   const [pages, setPages] = useState<string[]>([]);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [sequenceId, setSequenceId] = useState("manual");
   const [status, setStatus] = useState("Connecting…");
   const [scoreError, setScoreError] = useState("");
+  const [choosingTeam, setChoosingTeam] = useState(initiallyChoosingTeam);
+  const [refreshVersion, setRefreshVersion] = useState(0);
   useEffect(() => {
     if (!isChannel(channel)) return;
     const controller = new AbortController();
@@ -32,7 +57,7 @@ function LiveDisplay({ channel }: { channel: string | null }) {
     }
     void refreshScores();
     return () => { controller.abort(); clearTimeout(timer); };
-  }, [channel]);
+  }, [channel, refreshVersion]);
   useEffect(() => {
     if (!isChannel(channel)) return;
     let stopped = false;
@@ -70,8 +95,18 @@ function LiveDisplay({ channel }: { channel: string | null }) {
   if (!isChannel(channel)) {
     return <main className="flex min-h-screen items-center justify-center bg-black p-8 text-2xl text-white">Open the composer website and copy your glasses display link into Meta AI.</main>;
   }
+  if (choosingTeam) {
+    return <main className="flex min-h-screen flex-col items-start justify-center gap-5 bg-black p-6 text-white">
+      <button type="button" onClick={() => setChoosingTeam(false)} className="min-h-11 rounded-xl border border-white/30 px-4 py-2 text-lg focus-visible:outline-2 focus-visible:outline-cyan-300">Back to display</button>
+      <NflPicker channel={channel} compact onSaved={() => {
+        setChoosingTeam(false);
+        setRefreshVersion((version) => version + 1);
+      }} />
+    </main>;
+  }
   return (
     <main className="flex min-h-screen flex-col justify-center bg-black p-8 text-white">
+      <button type="button" onClick={() => setChoosingTeam(true)} className="mb-5 min-h-11 self-start rounded-xl border border-cyan-300/50 px-4 py-2 text-lg text-cyan-200 focus-visible:outline-2 focus-visible:outline-cyan-300">Choose NFL team</button>
       <p role="status" className="mb-6 text-lg text-cyan-200">{status}</p>
       {scoreError && <p role="status" className="mb-3 text-sm text-amber-200">{scoreError}</p>}
       {imageUrl && (

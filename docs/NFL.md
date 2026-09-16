@@ -2,10 +2,18 @@
 
 The composer supports **NFL → Conference (AFC/NFC) → Division → Team**. Each division has four teams. Dallas is **NFC → East → Dallas Cowboys**. Team alignment is maintained in `lib/nfl-teams.ts`; the [NFL team directory](https://www.nfl.com/teams/) is the reference.
 
+## Common URL for different users
+
+Everyone can add `https://meta-display-test.vercel.app/display` in Meta AI. On first use, the glasses browser generates and remembers its own private channel and opens the team picker. Different browser storage profiles have independent selections. Reopening the URL reuses the saved channel; clearing site storage resets this pairing. If storage is unavailable, a warning explains that the selection may not survive reopening.
+
+Existing `/display?channel=...` links still pair with the specified channel, which is saved locally before the channel parameter is removed from the address bar. Invalid explicit channel links show an error instead of silently switching displays. The UUID still exists internally for API calls; this hides it from the display URL, not from browser developer tools.
+
+To control glasses from a separate phone composer or vendor API, use the original private pairing link once. Opening the common URL independently on two devices does not pair them. The composer continues to provide private channel-specific links for this purpose.
+
 ## Use
 
-1. Open the bookmarked composer for your paired display.
-2. Choose a conference, division, and team, then click **Track this team**.
+1. Open the bookmarked composer, or select **Choose NFL team** on the paired glasses display.
+2. Choose a conference, division, and team, then click **Track this team**. On the glasses, saving returns to the scores and requests an immediate refresh. **Back to display** closes the picker without saving draft changes.
 3. Keep the display web app open on the glasses. The composer can be closed after saving.
 4. The composer lists every completed match oldest-first, including games played before you started tracking. The glasses cycle through one game every 10 seconds in the same order; an in-progress game is appended after the completed results and continues to receive score/status updates. With one result, that result stays on screen. The composer also shows the regular-season W–L–T record, next game, and season schedule.
 5. Click **Pause automatic updates** before sending manual text you want to keep. **Resume updates** sends the current result again. Removing the saved team stops future updates and leaves the current display text intact.
