@@ -47,6 +47,24 @@ test('source parsing handles score strings, live clocks, finals, and missing sco
   assert.throws(() => parseScoreboard({ events: [event] }, 2026, now), /missing scores/);
   assert.throws(() => parseScoreboard({}, 2026, now), /events/);
 });
+
+test('score fetch uses the working ESPN scoreboard endpoint without the failing date filter', async () => {
+  const calls = [];
+  const payload = { events: [{
+    id: 'espn-game', date: game.date, season: { year: 2026, type: 2 }, week: { number: 1 },
+    competitions: [{ competitors: [
+      { homeAway: 'home', team: { abbreviation: 'DAL' }, score: '14' },
+      { homeAway: 'away', team: { abbreviation: 'PHI' }, score: '7' },
+    ] }], status: { type: { state: 'in', completed: false, shortDetail: '8:00 - 3rd' } },
+  }] };
+  const result = await import('../lib/nfl-scores.ts').then(({ fetchScores }) => fetchScores(2026, async (url, options) => {
+    calls.push(String(url));
+    return { ok: true, json: async () => payload };
+  }));
+  assert.deepEqual(calls, ['https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard?limit=1000']);
+  assert.equal(result.games.length, 1);
+  assert.equal(result.games[0].home, 'DAL');
+});
 test('preferences persist across instances, isolate channels, and reject invalid input', async () => {
   const db = fakeRedis(), store = createNflStore(env, db.transport);
   assert.equal(await store.readPreference(channel), null);

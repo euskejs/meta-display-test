@@ -38,6 +38,7 @@ function LiveDisplay({ channel, initiallyChoosingTeam = false }: { channel: stri
   const [scoreError, setScoreError] = useState("");
   const [choosingTeam, setChoosingTeam] = useState(initiallyChoosingTeam);
   const [refreshVersion, setRefreshVersion] = useState(0);
+  const [hasTrackedContent, setHasTrackedContent] = useState(false);
   useEffect(() => {
     if (!isChannel(channel)) return;
     const controller = new AbortController();
@@ -50,14 +51,15 @@ function LiveDisplay({ channel, initiallyChoosingTeam = false }: { channel: stri
         if (!response.ok) throw new Error();
         if (!controller.signal.aborted) setScoreError("");
       } catch {
-        if (!controller.signal.aborted) setScoreError("Score refresh delayed. Retrying automatically.");
+        if (!controller.signal.aborted && (message || pages.length > 0)) setScoreError("Score refresh delayed. Retrying automatically.");
+        else if (!controller.signal.aborted) setScoreError("");
       } finally {
         if (!controller.signal.aborted) timer = setTimeout(refreshScores, 60000);
       }
     }
     void refreshScores();
     return () => { controller.abort(); clearTimeout(timer); };
-  }, [channel, refreshVersion]);
+  }, [channel, refreshVersion, message, pages.length]);
   useEffect(() => {
     if (!isChannel(channel)) return;
     let stopped = false;
@@ -75,10 +77,13 @@ function LiveDisplay({ channel, initiallyChoosingTeam = false }: { channel: stri
         if (!stopped) {
           setMessage(data.message?.message ?? "");
           const incoming: string[] = data.message?.pages ?? [];
+          const hasData = Boolean(data.message?.message || incoming.length);
+          setHasTrackedContent(hasData);
           setImageUrl(data.message?.imageUrl ?? null);
           setSequenceId(data.message?.sequenceId ?? "manual");
           setPages((previous) => JSON.stringify(previous) === JSON.stringify(incoming) ? previous : incoming);
-          setStatus(data.message ? "Connected to display" : "Waiting for team update");
+          setStatus(hasData ? "Connected to display" : "Waiting for team update");
+          if (!hasData) setScoreError("");
         }
         retryDelay = 2000;
       } catch (error) {
@@ -105,7 +110,7 @@ function LiveDisplay({ channel, initiallyChoosingTeam = false }: { channel: stri
     <main className="flex min-h-screen flex-col justify-center bg-black p-8 text-white">
       <button autoFocus type="button" onClick={() => setChoosingTeam(true)} className="focusable mb-5 min-h-11 self-start rounded-xl border border-cyan-300/50 px-4 py-2 text-lg text-cyan-200 focus:outline-2 focus:outline-cyan-300">Change team</button>
       <p role="status" className="mb-6 text-lg text-cyan-200">{status}</p>
-      {scoreError && <p role="status" className="mb-3 text-sm text-amber-200">{scoreError}</p>}
+      {hasTrackedContent && scoreError && <p role="status" className="mb-3 text-sm text-amber-200">{scoreError}</p>}
       {imageUrl && (
         <div className="mb-5 flex items-center justify-center">
           <img src={imageUrl} alt="Team logo" className="h-20 w-20 rounded-full border border-white/10 bg-white/5 object-contain p-2 shadow-lg shadow-cyan-500/20" />

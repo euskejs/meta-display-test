@@ -68,8 +68,8 @@ export function parseScoreboard(payload: unknown, season: number, now = new Date
 }
 
 export async function fetchScores(season = currentSeason(), request = fetch): Promise<Scores> {
-  const response = await request(`https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard?dates=${season}0901-${season + 1}0301&limit=1000`, {
-    cache: "no-store", signal: AbortSignal.timeout(15000),
+  const response = await request("https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard?limit=1000", {
+    headers: { "User-Agent": "Mozilla/5.0" }, cache: "no-store", signal: AbortSignal.timeout(15000),
   });
   if (!response.ok) throw new Error("NFL score source is unavailable.");
   return parseScoreboard(await response.json(), season);
