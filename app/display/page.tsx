@@ -78,7 +78,7 @@ function LiveDisplay({ channel, initiallyChoosingTeam = false }: { channel: stri
           setImageUrl(data.message?.imageUrl ?? null);
           setSequenceId(data.message?.sequenceId ?? "manual");
           setPages((previous) => JSON.stringify(previous) === JSON.stringify(incoming) ? previous : incoming);
-          setStatus(data.message ? "Connected to display" : "Waiting for your first message");
+          setStatus(data.message ? "Connected to display" : "Waiting for team update");
         }
         retryDelay = 2000;
       } catch (error) {
@@ -111,7 +111,7 @@ function LiveDisplay({ channel, initiallyChoosingTeam = false }: { channel: stri
           <img src={imageUrl} alt="Team logo" className="h-20 w-20 rounded-full border border-white/10 bg-white/5 object-contain p-2 shadow-lg shadow-cyan-500/20" />
         </div>
       )}
-      <RotatingMessage key={sequenceId} pages={pages} message={message} />
+      {(message || pages.length > 0) && <RotatingMessage key={sequenceId} pages={pages} message={message} />}
     </main>
   );
 }
@@ -122,10 +122,12 @@ function RotatingMessage({ pages, message }: { pages: string[]; message: string 
     const timer = setInterval(() => setPageIndex((index) => (index + 1) % pages.length), 10000);
     return () => clearInterval(timer);
   }, [pages.length]);
+  const displayText = pages.length ? pages[pageIndex % pages.length] : message;
+  if (!displayText) return null;
   return <>
     {pages.length > 1 && <p className="mb-3 text-sm text-cyan-200">Game {(pageIndex % pages.length) + 1} of {pages.length} · Changes every 10 seconds</p>}
     <p aria-live="polite" className="whitespace-pre-wrap text-3xl leading-snug [overflow-wrap:anywhere]">
-      {pages.length ? pages[pageIndex % pages.length] : message || "Type a message on the website, then tap Send to display."}
+      {displayText}
     </p>
   </>;
 }
