@@ -12,13 +12,13 @@ To control glasses from a separate phone composer or vendor API, use the origina
 
 ## Use
 
-1. Open the bookmarked composer, or select **Choose NFL team** on the paired glasses display.
-2. Choose a conference, division, and team, then click **Track this team**. On the glasses, saving returns to the scores and requests an immediate refresh. **Back to display** closes the picker without saving draft changes.
+1. Open the bookmarked composer, or select **Change team** on the paired glasses display.
+2. On the phone composer, choose a conference, division, and team, then click **Track this team**. On the glasses, use the large button menus: **Conference → Division → Team → Follow team**. Up/down moves the highlighted focus (wrapping at the ends), and Select/Enter activates the focused button. **Back** or Escape returns one step; **Back to display** exits without saving. The saved choice is focused when available. Confirmation saves the choice, returns to scores, and requests an immediate refresh. **Pause updates** and **Resume updates** remain available on the conference screen.
 3. Keep the display web app open on the glasses. The composer can be closed after saving.
 4. The composer lists every completed match oldest-first, including games played before you started tracking. The glasses cycle through one game every 10 seconds in the same order; an in-progress game is appended after the completed results and continues to receive score/status updates. With one result, that result stays on screen. The composer also shows the regular-season W–L–T record, next game, and season schedule.
 5. Click **Pause automatic updates** before sending manual text you want to keep. **Resume updates** sends the current result again. Removing the saved team stops future updates and leaves the current display text intact.
 
-Changing conference clears division and team; changing division clears team. Draft selections do not affect the saved subscription until **Track this team** is clicked. Settings are stored per channel in Redis and follow the same composer bookmark across devices. The channel link grants access to these settings, as it does to manual messages.
+Changing conference clears division and team; changing division clears team. Draft selections do not affect the saved subscription until **Track this team** (composer) or **Follow team** (glasses confirmation) is selected. Settings are stored per channel in Redis and follow the same composer bookmark across devices. The channel link grants access to these settings, as it does to manual messages.
 
 ## Optional background setup
 

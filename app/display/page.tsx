@@ -2,7 +2,7 @@
 import { Suspense, useEffect, useState } from "react";
 import { resolveDisplayPairing } from "@/lib/display-pairing";
 import { isChannel } from "@/lib/messages";
-import NflPicker from "../nfl-picker";
+import GlassesTeamMenu from "./team-menu";
 function DisplayContent() {
   const [pairing, setPairing] = useState<ReturnType<typeof resolveDisplayPairing> | null>(null);
   const [error, setError] = useState("");
@@ -96,17 +96,14 @@ function LiveDisplay({ channel, initiallyChoosingTeam = false }: { channel: stri
     return <main className="flex min-h-screen items-center justify-center bg-black p-8 text-2xl text-white">Open the composer website and copy your glasses display link into Meta AI.</main>;
   }
   if (choosingTeam) {
-    return <main className="flex min-h-screen flex-col items-start justify-center gap-5 bg-black p-6 text-white">
-      <button type="button" onClick={() => setChoosingTeam(false)} className="min-h-11 rounded-xl border border-white/30 px-4 py-2 text-lg focus-visible:outline-2 focus-visible:outline-cyan-300">Back to display</button>
-      <NflPicker channel={channel} compact onSaved={() => {
+    return <GlassesTeamMenu channel={channel} onClose={() => setChoosingTeam(false)} onSaved={() => {
         setChoosingTeam(false);
         setRefreshVersion((version) => version + 1);
-      }} />
-    </main>;
+      }} />;
   }
   return (
     <main className="flex min-h-screen flex-col justify-center bg-black p-8 text-white">
-      <button type="button" onClick={() => setChoosingTeam(true)} className="mb-5 min-h-11 self-start rounded-xl border border-cyan-300/50 px-4 py-2 text-lg text-cyan-200 focus-visible:outline-2 focus-visible:outline-cyan-300">Choose NFL team</button>
+      <button autoFocus type="button" onClick={() => setChoosingTeam(true)} className="focusable mb-5 min-h-11 self-start rounded-xl border border-cyan-300/50 px-4 py-2 text-lg text-cyan-200 focus:outline-2 focus:outline-cyan-300">Change team</button>
       <p role="status" className="mb-6 text-lg text-cyan-200">{status}</p>
       {scoreError && <p role="status" className="mb-3 text-sm text-amber-200">{scoreError}</p>}
       {imageUrl && (

@@ -48,7 +48,9 @@ Use the composer's private display link when you want phone messages or API call
 
 ## NFL live scores
 
-Choose **Conference → Division → Team** in the composer or through **Choose NFL team** on the glasses display, then **Track this team** to save a per-display subscription. The panel shows every completed match oldest-first, live scores, the season record, and the next game. The glasses cycle through the results every 10 seconds, one game per page, with any live game appended. **Pause automatic updates** lets you keep manual text on the display.
+On the glasses, team selection uses large buttons rather than dropdowns: **Conference → Division → Team → Follow team**. Move focus with up/down and activate with Select. **Back** returns one step without saving. The phone composer retains its dropdowns.
+
+Choose **Conference → Division → Team** in the composer and **Track this team** to save a per-display subscription. On the glasses, open **Change team** and confirm with **Follow team**. The panel shows every completed match oldest-first, live scores, the season record, and the next game. The glasses cycle through the results every 10 seconds, one game per page, with any live game appended. **Pause automatic updates** lets you keep manual text on the display.
 
 The open composer or glasses display automatically fetches scores for its enabled subscription; no separate scheduler is required. For background refreshes while both pages are closed, configure `CRON_SECRET` and a scheduler calling `/api/nfl/sync` every minute. An always-on Node worker is included (`npm run nfl:worker`); Vercel Pro/Enterprise Cron and other schedulers are also supported. See [NFL setup and behavior](docs/NFL.md) before enabling production tracking. The glasses app must remain open; the composer can be closed.
 
